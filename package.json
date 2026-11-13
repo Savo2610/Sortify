@@ -7,7 +7,9 @@
     "dev": "vite --host 127.0.0.1 --port 5173",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "deploy": "npm run build && wrangler deploy",
+    "cf:dev": "npm run build && wrangler dev --ip 127.0.0.1 --port 8787"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.3.0",
@@ -19,6 +21,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
     "typescript": "~5.9.3",
-    "vite": "^8.3.8"
+    "vite": "^8.3.8",
+    "wrangler": "^4.162.0"
   }
 }

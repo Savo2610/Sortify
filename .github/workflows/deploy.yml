@@ -1,22 +1,19 @@
-name: Deploy to GitHub Pages
+name: Deploy to Cloudflare
+
+# Optional: only needed if you deploy via GitHub Actions instead of
+# connecting the repository in the Cloudflare dashboard (Workers Builds).
+# Activate by setting the repository variable DEPLOY_WITH_ACTIONS=true and the
+# secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
+    if: ${{ vars.DEPLOY_WITH_ACTIONS == 'true' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,18 +23,8 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          # Optional: Repository-Variable SPOTIFY_CLIENT_ID setzen, dann entfällt die Eingabe in der App.
           VITE_SPOTIFY_CLIENT_ID: ${{ vars.SPOTIFY_CLIENT_ID }}
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

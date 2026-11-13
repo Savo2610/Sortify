@@ -24,11 +24,11 @@ Alles läuft im Browser (OAuth PKCE, kein Server, kein Client Secret).
 2. Als **Redirect URI** die Adresse eintragen, unter der Sortify läuft – genau so, wie sie im
    Einrichtungsdialog der App angezeigt wird, z. B.
    - lokal: `http://127.0.0.1:5173/` (Spotify erlaubt `localhost` nicht mehr, nur `127.0.0.1`)
-   - GitHub Pages: `https://<user>.github.io/Sortify/`
+   - Cloudflare: `https://sortify.<dein-subdomain>.workers.dev/` (oder deine eigene Domain)
 3. Unter **User Management** den eigenen Spotify-Account eintragen (Development Mode: max. 5 Nutzer,
    der App-Besitzer braucht Spotify Premium).
 4. Die **Client ID** beim ersten Start in Sortify einfügen – oder fest einbauen über
-   `VITE_SPOTIFY_CLIENT_ID` (`.env.local` bzw. Repository-Variable `SPOTIFY_CLIENT_ID` für GitHub Pages).
+   `VITE_SPOTIFY_CLIENT_ID` (`.env.local` lokal bzw. Build-Variable bei Cloudflare).
 
 ## Entwicklung
 
@@ -39,10 +39,32 @@ npm run build    # Produktions-Build nach dist/
 npm run preview  # Build lokal testen (http://127.0.0.1:4173/, eigene Redirect URI nötig)
 ```
 
-## Deployment (GitHub Pages)
+## Deployment (Cloudflare)
 
-Der Workflow `.github/workflows/deploy.yml` baut bei jedem Push auf `main` und veröffentlicht auf GitHub Pages.
-Einmalig unter *Settings → Pages → Source* „GitHub Actions“ auswählen.
+Sortify wird als statischer Cloudflare Worker ausgeliefert (`wrangler.jsonc`, nur Static Assets – kein Server-Code).
+Cache-Header stehen in `public/_headers`.
+
+**Variante A – Git-Anbindung im Dashboard (empfohlen):**
+
+1. Cloudflare Dashboard → *Workers & Pages* → *Create* → *Import a repository* → dieses Repo wählen.
+2. Build command: `npm run build` · Deploy command: `npx wrangler deploy` (Standard).
+3. Optional unter *Settings → Build → Variables*: `VITE_SPOTIFY_CLIENT_ID` = deine Client ID.
+4. Nach dem ersten Deploy läuft die App unter `https://sortify.<dein-subdomain>.workers.dev/` –
+   genau diese Adresse (mit `/` am Ende) als Redirect URI bei Spotify eintragen.
+
+Jeder Push auf den Produktions-Branch deployt automatisch.
+
+**Variante B – von der Kommandozeile:**
+
+```bash
+npx wrangler login
+npm run deploy
+```
+
+**Variante C – GitHub Actions:** `.github/workflows/deploy.yml` deployt bei Push auf `main`, wenn die
+Repository-Variable `DEPLOY_WITH_ACTIONS=true` und die Secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` gesetzt sind.
+
+Lokal wie auf Cloudflare testen: `npm run cf:dev` (http://127.0.0.1:8787/).
 
 ## Hinweise zur Spotify-API
 

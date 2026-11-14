@@ -24,7 +24,7 @@ Alles läuft im Browser (OAuth PKCE, kein Server, kein Client Secret).
 2. Als **Redirect URI** die Adresse eintragen, unter der Sortify läuft – genau so, wie sie im
    Einrichtungsdialog der App angezeigt wird, z. B.
    - lokal: `http://127.0.0.1:5173/` (Spotify erlaubt `localhost` nicht mehr, nur `127.0.0.1`)
-   - Cloudflare: `https://sortify.<dein-subdomain>.workers.dev/` (oder deine eigene Domain)
+   - Cloudflare: `https://sortify.veerka.mp/` (oder deine eigene Domain)
 3. Unter **User Management** den eigenen Spotify-Account eintragen (Development Mode: max. 5 Nutzer,
    der App-Besitzer braucht Spotify Premium).
 4. Die **Client ID** beim ersten Start in Sortify einfügen – oder fest einbauen über
@@ -49,7 +49,7 @@ Cache-Header stehen in `public/_headers`.
 1. Cloudflare Dashboard → *Workers & Pages* → *Create* → *Import a repository* → dieses Repo wählen.
 2. Build command: `npm run build` · Deploy command: `npx wrangler deploy` (Standard).
 3. Optional unter *Settings → Build → Variables*: `VITE_SPOTIFY_CLIENT_ID` = deine Client ID.
-4. Nach dem ersten Deploy läuft die App unter `https://sortify.<dein-subdomain>.workers.dev/` –
+4. Nach dem ersten Deploy läuft die App unter `https://sortify.veerka.mp/` –
    genau diese Adresse (mit `/` am Ende) als Redirect URI bei Spotify eintragen.
 
 Jeder Push auf den Produktions-Branch deployt automatisch.

@@ -57,7 +57,7 @@ test("Löschen gehörter Songs lässt keinen Song aus (beide Richtungen)", async
       // Jeder dritte Song wird nach dem Hören aus der Quelle gelöscht.
       if (Number(t.id.slice(1)) % 3 === 0) {
         list.splice(list.indexOf(t.id), 1);
-        walker.shifted(-1);
+        walker.removed();
       }
     });
     assert.deepEqual(got, expected, `dir ${dir}`);

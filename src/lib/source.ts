@@ -92,10 +92,16 @@ export class Walker {
     return null;
   }
 
-  /** Ein bereits geladener Song wurde aus der Quelle gelöscht (delta -1) oder zurückgelegt (+1). */
-  shifted(delta: 1 | -1) {
-    this.total = Math.max(0, this.total + delta);
-    if (this.dir === 1) this.cursor = Math.max(0, this.cursor + delta);
+  /** Ein bereits geladener Song wurde aus der Quelle gelöscht. */
+  removed() {
+    this.total = Math.max(0, this.total - 1);
+    if (this.dir === 1) this.cursor = Math.max(0, this.cursor - 1);
+  }
+
+  /** Ein gelöschter Song wurde zurückgelegt: Lieblingssongs vorn, Playlists hinten. */
+  restored() {
+    this.total += 1;
+    if (this.source === LIKED) this.cursor += 1;
   }
 
   hintFor(track: Track): Hint[string] {

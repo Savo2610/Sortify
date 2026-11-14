@@ -58,6 +58,7 @@ export class Session extends Store<SessionState> {
   private stopped = false;
   private dropTimer: number | undefined;
   private toastId = 0;
+  private chain: Promise<unknown> = Promise.resolve();
 
   constructor(
     private api: Api,
@@ -83,6 +84,16 @@ export class Session extends Store<SessionState> {
     this.dir = (config.order === "oldest") === liked ? -1 : 1;
     this.walker = new Walker(api, config.source!, this.dir);
     this.state.targets = this.targetList();
+  }
+
+  /**
+   * Nachladen und Löschen aus der Quelle nie gleichzeitig: sonst verrutscht
+   * die Seite, die gerade geholt wird, um einen Song.
+   */
+  private serial<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.chain.then(fn, fn);
+    this.chain = run.catch(() => {});
+    return run;
   }
 
   private get source() {
@@ -171,7 +182,7 @@ export class Session extends Store<SessionState> {
 
   private fill(): Promise<boolean> {
     return (this.filling ??= (async () => {
-      const page = await this.walker.next();
+      const page = await this.serial(() => this.walker.next());
       if (!page) {
         this.exhausted = true;
         return false;
@@ -205,18 +216,36 @@ export class Session extends Store<SessionState> {
     const fresh = !("track" in next);
     const entry: Entry = fresh ? { track: next, added: new Set(), dropped: "no" } : next;
     const { track } = entry;
-    const total = this.walker.total;
     this.set({
       phase: "ready",
       entry,
       member: this.memberMap(track),
       canBack: this.history.length > 0,
-      total,
-      pos: Math.max(1, Math.min(total, this.dir === 1 ? track.index + 1 : total - track.index)),
+      ...this.place(track),
     });
     if (fresh) this.sync.setHint(this.source, this.dir, this.walker.hintFor(track));
     const startAt = Math.min(this.config.startAt * 1000, Math.max(0, track.durationMs - 20_000));
     this.player.play(track, startAt);
+  }
+
+  /** Wo der Song in der Quelle steht, in Laufrichtung gezählt. */
+  private place(track: Track) {
+    const total = this.walker.total;
+    const pos = this.dir === 1 ? track.index + 1 : total - track.index;
+    return { total, pos: Math.max(1, Math.min(total, pos)) };
+  }
+
+  /** Geladene Songs rücken nach, wenn sich die Quelle durch uns verschiebt. */
+  private reindex(shift: (index: number) => number) {
+    const current = this.state.entry;
+    const tracks = [
+      ...this.queue,
+      ...this.history.map((e) => e.track),
+      ...this.forward.map((e) => e.track),
+      ...(current ? [current.track] : []),
+    ];
+    for (const t of new Set(tracks)) t.index = shift(t.index);
+    if (current && this.state.phase === "ready") this.set(this.place(current.track));
   }
 
   /* ---------- Aktionen ---------- */
@@ -266,10 +295,15 @@ export class Session extends Store<SessionState> {
     if (!entry) return;
     if (entry.dropped !== "done") return this.next(true);
     try {
-      await this.api.add(this.source, entry.track.uri);
+      await this.serial(async () => {
+        await this.api.add(this.source, entry.track.uri);
+        this.walker.restored();
+        const liked = this.source === LIKED;
+        this.reindex((i) => (liked ? i + 1 : i));
+        entry.track.index = liked ? 0 : this.walker.total - 1;
+      });
       entry.dropped = "no";
-      this.walker.shifted(1);
-      this.set({ entry: { ...entry } });
+      this.set({ entry: { ...entry }, ...this.place(entry.track) });
     } catch (err) {
       this.toast(message(err));
     }
@@ -354,8 +388,12 @@ export class Session extends Store<SessionState> {
       list.map(async (entry) => {
         entry.dropped = "done";
         try {
-          await this.api.remove(this.source, entry.track.uri);
-          this.walker.shifted(-1);
+          await this.serial(async () => {
+            await this.api.remove(this.source, entry.track.uri);
+            this.walker.removed();
+            const gone = entry.track.index;
+            this.reindex((i) => (i > gone ? i - 1 : i));
+          });
         } catch (err) {
           entry.dropped = "no";
           this.toast(message(err));

@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "sortify",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-11-01",
+
+  // Das Frontend baut Vite nach dist/client; /api/* geht an den Worker,
+  // alles andere ist die App (auch /callback nach dem Spotify-Login).
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+
+  "routes": [{ "pattern": "sortify.veerka.mp", "custom_domain": true }],
+
+  // Ein Durable Object pro Spotify-Konto hält Einstellungen und Fortschritt,
+  // damit man auf einem anderen Gerät weitermachen kann.
+  "durable_objects": {
+    "bindings": [{ "name": "USER", "class_name": "UserState" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["UserState"] }],
+
+  "observability": { "enabled": true }
+}

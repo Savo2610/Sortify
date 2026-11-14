@@ -413,20 +413,63 @@ button.row.on:hover {
   color: var(--dim);
 }
 
-.setup-hint {
+.login .error {
+  margin-top: 4px;
+}
+
+.login > .link {
+  margin-top: 6px;
+}
+
+.own-id {
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 10px;
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+.own-form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
   max-width: 420px;
-  padding: 20px;
+  margin-top: 10px;
+  padding: 18px;
   border: 1px solid var(--line);
   border-radius: var(--r);
   background: var(--panel);
+  font-size: 14px;
+  text-align: left;
 }
 
-.setup-hint span {
-  color: var(--dim);
+.own-form a:not(.link) {
+  color: var(--text);
+}
+
+.own-row {
+  display: flex;
+  gap: 8px;
+}
+
+.own-row .field {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  background: var(--bg);
+  font: 14px ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+.own-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin: -6px 0 -8px;
+}
+
+.own-foot .link {
+  text-decoration: none;
 }
 
 /* ---------- Setup ---------- */

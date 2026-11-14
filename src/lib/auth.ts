@@ -1,4 +1,4 @@
-import { CLIENT_ID, SCOPES } from "../config";
+import { clientId, SCOPES } from "../config";
 
 // Spotify-Login per Authorization Code + PKCE, komplett im Browser.
 
@@ -9,6 +9,8 @@ interface Tokens {
   access: string;
   refresh: string;
   expires: number;
+  /** Client-ID, die diese Tokens ausgestellt hat – nur sie kann sie erneuern. */
+  client?: string;
 }
 
 export class AuthError extends Error {}
@@ -50,12 +52,13 @@ function b64url(bytes: ArrayBuffer | Uint8Array) {
 export async function login() {
   const verifier = b64url(crypto.getRandomValues(new Uint8Array(48)));
   const state = b64url(crypto.getRandomValues(new Uint8Array(12)));
-  localStorage.setItem(PKCE, JSON.stringify({ verifier, state }));
+  const client = clientId();
+  localStorage.setItem(PKCE, JSON.stringify({ verifier, state, client }));
   const challenge = b64url(
     await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)),
   );
   const query = new URLSearchParams({
-    client_id: CLIENT_ID,
+    client_id: client,
     response_type: "code",
     redirect_uri: redirectUri(),
     code_challenge_method: "S256",
@@ -66,11 +69,11 @@ export async function login() {
   location.assign(`https://accounts.spotify.com/authorize?${query}`);
 }
 
-async function tokenRequest(params: Record<string, string>): Promise<Tokens> {
+async function tokenRequest(client: string, params: Record<string, string>): Promise<Tokens> {
   const res = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ client_id: CLIENT_ID, ...params }),
+    body: new URLSearchParams({ client_id: client, ...params }),
   });
   if (res.status === 400 || res.status === 401) throw new AuthError("Anmeldung abgelaufen");
   if (!res.ok) throw new Error(`Spotify-Anmeldung: ${res.status}`);
@@ -79,6 +82,7 @@ async function tokenRequest(params: Record<string, string>): Promise<Tokens> {
     access: data.access_token,
     refresh: data.refresh_token ?? params.refresh_token,
     expires: Date.now() + (data.expires_in - 60) * 1000,
+    client,
   };
 }
 
@@ -96,7 +100,7 @@ export async function completeLogin(): Promise<string | null> {
   }
   try {
     write(
-      await tokenRequest({
+      await tokenRequest(saved.client ?? clientId(), {
         grant_type: "authorization_code",
         code,
         redirect_uri: redirectUri(),
@@ -133,7 +137,10 @@ export async function getToken(stale?: string): Promise<string> {
       return cur.access;
     }
     try {
-      const next = await tokenRequest({ grant_type: "refresh_token", refresh_token: cur.refresh });
+      const next = await tokenRequest(cur.client ?? clientId(), {
+        grant_type: "refresh_token",
+        refresh_token: cur.refresh,
+      });
       write(next);
       return next.access;
     } catch (err) {

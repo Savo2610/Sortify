@@ -13,7 +13,10 @@ Playlists einsortieren. PWA für Handy und PC, läuft auf `sortify.veerka.mp`.
    öffentlich (Login per PKCE, kein Secret).
 
 Wiedergabe braucht Spotify Premium. Im Development Mode der Spotify-App können
-sich höchstens fünf eingetragene Konten anmelden.
+sich höchstens fünf eingetragene Konten anmelden (Dashboard → Settings → User
+Management). Wer nicht dazugehört, legt selbst eine Spotify-App an und trägt
+deren Client-ID auf der Anmeldeseite unter „Eigene Client-ID verwenden“ ein;
+sie bleibt nur im jeweiligen Browser gespeichert.
 
 ## Entwickeln
 

@@ -1,4 +1,18 @@
-export const CLIENT_ID: string = import.meta.env.VITE_SPOTIFY_CLIENT_ID ?? "";
+// Die eingebaute Client-ID gehört zur Spotify-App des Betreibers. Spotify lässt
+// dort nur fünf eingetragene Konten zu – wer nicht dazugehört, legt eine eigene
+// Spotify-App an und trägt deren Client-ID hier im Browser ein.
+const BUILT_IN: string = import.meta.env.VITE_SPOTIFY_CLIENT_ID ?? "";
+const OWN = "sortify.clientId";
+
+export const hasBuiltInClientId = BUILT_IN !== "";
+export const ownClientId = () => localStorage.getItem(OWN) ?? "";
+export const clientId = () => ownClientId() || BUILT_IN;
+export const isClientId = (value: string) => /^[0-9a-f]{32}$/i.test(value);
+
+export function setOwnClientId(id: string) {
+  if (id) localStorage.setItem(OWN, id);
+  else localStorage.removeItem(OWN);
+}
 
 export const SCOPES = [
   "playlist-read-private",
